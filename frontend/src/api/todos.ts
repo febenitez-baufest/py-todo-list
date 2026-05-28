@@ -2,6 +2,11 @@ import type { Todo, TodoCreate, TodoUpdate } from '../types/todo';
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000') + '/todos';
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -14,19 +19,19 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function fetchTodos(completed?: boolean): Promise<Todo[]> {
   const url = new URL(BASE_URL + '/');
   if (completed !== undefined) url.searchParams.set('completed', String(completed));
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: authHeaders() });
   return handleResponse<Todo[]>(res);
 }
 
 export async function fetchTodo(id: number): Promise<Todo> {
-  const res = await fetch(`${BASE_URL}/${id}`);
+  const res = await fetch(`${BASE_URL}/${id}`, { headers: authHeaders() });
   return handleResponse<Todo>(res);
 }
 
 export async function createTodo(data: TodoCreate): Promise<Todo> {
   const res = await fetch(BASE_URL + '/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(data),
   });
   return handleResponse<Todo>(res);
@@ -35,13 +40,16 @@ export async function createTodo(data: TodoCreate): Promise<Todo> {
 export async function updateTodo(id: number, data: TodoUpdate): Promise<Todo> {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(data),
   });
   return handleResponse<Todo>(res);
 }
 
 export async function deleteTodo(id: number): Promise<void> {
-  const res = await fetch(`${BASE_URL}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
   return handleResponse<void>(res);
 }
